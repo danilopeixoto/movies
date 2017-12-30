@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/">
+        <file>ui/MainWindow.qml</file>
+        <file>ui/MenuBar.qml</file>
+        <file>ui/MenuButton.qml</file>
+        <file>ui/MoviePanel.qml</file>
+        <file>ui/PosterView.qml</file>
+        <file>ui/SearchBar.qml</file>
+        <file>ui/StackPanel.qml</file>
+        <file>ui/DirectoryDialog.qml</file>
+        <file>images/delete.png</file>
+        <file>images/import_library.png</file>
+        <file>images/play.png</file>
+        <file>images/search.png</file>
+        <file>images/splash_screen.png</file>
+    </qresource>
+</RCC>

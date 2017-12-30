@@ -26,28 +26,72 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <Movies.h>
-#include <MainWindow.h>
 
-#include <QApplication>
-#include <iostream>
+#include <QtSingleApplication>
+#include <QObject>
+#include <QQmlEngine>
+#include <QQmlContext>
+#include <QQuickView>
+#include <QQuickItem>
+#include <QSplashScreen>
+#include <QSize>
+#include <QUrl>
+#include <QPixmap>
 
 MOVIES_NAMESPACE_USING
 
 int main(int argc, char ** argv) {
-    QApplication application(argc, argv);
+    QtSingleApplication application(MOVIES_ID, argc, argv);
 
-    MovieDatabase movieDatabase("25a26202d9effd52a58825afc0142306");
-    SearchResults searchResults;
-
-    if (movieDatabase.search("Oblivion", searchResults)) {
-        MovieData movieData;
-
-        if (movieDatabase.getDetails(searchResults.first(), movieData))
-            std::cout << movieData.toString().toStdString() << std::endl;
+    if (application.isRunning()) {
+        application.sendMessage("Application is already running.");
+        return 0;
     }
 
-    MainWindow mainWindow;
-    mainWindow.show();
+    QPixmap image(":/images/splash_screen.png");
+
+    QSplashScreen splashScreen(image);
+    splashScreen.show();
+
+    qmlRegisterType<MovieLibrary>("Movies.MovieLibrary", 1, 0, "MovieLibrary");
+
+    QQuickView view;
+    QObject::connect(&application, &QtSingleApplication::messageReceived,
+                     &view, &QQuickView::requestActivate);
+
+    MovieLibrary movieLibrary(MOVIES_DATABASE_KEY);
+    QQmlContext * context = view.rootContext();
+    context->setContextProperty("movieLibrary", &movieLibrary);
+
+    view.setTitle(MOVIES_NAME);
+    view.setSource(QUrl("qrc:/ui/MainWindow.qml"));
+
+    const QSize & viewSize = view.size();
+    view.setMinimumSize(viewSize);
+    view.setMaximumSize(viewSize);
+
+    QObject * mainWindow = view.rootObject();
+    QObject::connect(mainWindow, SIGNAL(directoryChanged(QString)),
+                     &movieLibrary, SLOT(import(QString)));
+
+    QObject * searchBar = mainWindow->findChild<QObject *>("searchBar");
+    QObject::connect(searchBar, SIGNAL(inputTextChanged(QString, int)),
+                     &movieLibrary, SLOT(filter(QString, int)));
+
+    File file(MOVIES_DATABASE_FILE);
+    QObject::connect(&application, &QtSingleApplication::aboutToQuit, [&]() {
+        file.open(MOVIES_DATABASE_FILE);
+        file.write(movieLibrary);
+        file.close();
+    });
+
+    view.show();
+    splashScreen.close();
+
+    if (file.read(movieLibrary))
+        movieLibrary.update();
+
+    file.close();
 
     return application.exec();
 }

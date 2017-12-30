@@ -30,6 +30,7 @@
 
 #include <Global.h>
 
+#include <QTimer>
 #include <QEventLoop>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -65,6 +66,8 @@ private:
         static const String writing;
     };
 
+    static const UInt timeout;
+
     static const QNetworkRequest authenticationRequest(const String &);
     static const QNetworkRequest searchRequest(const String &, const String &);
     static const QNetworkRequest detailRequest(const String &, UInt);
@@ -72,12 +75,13 @@ private:
 
     String key;
 
+    QTimer timer;
     QEventLoop eventLoop;
     QNetworkAccessManager networkManager;
 
-    MovieDatabase & wait();
+    Bool waiting(QNetworkReply *);
     Bool authenticate(const String &);
-    Bool retrievePoster(const String &, Poster &);
+    String retrievePoster(const String &);
 
 public:
     MovieDatabase();
@@ -85,9 +89,9 @@ public:
     ~MovieDatabase();
 
     const String & getKey() const;
-    Bool isOpen() const;
+    Bool isOpen();
 
-    MovieDatabase & open(const String &);
+    Bool open(const String &);
     MovieDatabase & close();
 
     Bool search(const String &, SearchResults &);

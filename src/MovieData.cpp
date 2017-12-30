@@ -31,20 +31,22 @@ MOVIES_NAMESPACE_BEGIN
 
 MovieData::MovieData() {}
 MovieData::MovieData(const MovieData & movieData)
-    : title(movieData.title), year(movieData.year), overview(movieData.overview),
-      directors(movieData.directors), writers(movieData.writers),
-      actors(movieData.actors), genres(movieData.genres),
-      runtime(movieData.runtime), poster(movieData.poster) {}
-MovieData::MovieData(const String & title, UInt year, const String & overview,
+    : id(movieData.id), title(movieData.title), year(movieData.year),
+      overview(movieData.overview), directors(movieData.directors),
+      writers(movieData.writers), actors(movieData.actors),
+      genres(movieData.genres), runtime(movieData.runtime),
+      poster(movieData.poster), url(movieData.url) {}
+MovieData::MovieData(UInt id, const String & title, UInt year, const String & overview,
                      const StringList & directors, const StringList & writers,
                      const StringList & actors, const StringList & genres,
-                     const Runtime & runtime, const Poster & poster)
-    : title(title), year(year), overview(overview),
-    directors(directors), writers(writers), actors(actors),
-    genres(genres), runtime(runtime), poster(poster) {}
+                     const Runtime & runtime, const String & poster, const String & url)
+    : id(id), title(title), year(year), overview(overview),
+      directors(directors), writers(writers), actors(actors),
+      genres(genres), runtime(runtime), poster(poster), url(url) {}
 MovieData::~MovieData() {}
 
 MovieData & MovieData::operator =(const MovieData & rhs) {
+    id = rhs.id;
     title = rhs.title;
     year = rhs.year;
     overview = rhs.overview;
@@ -54,30 +56,36 @@ MovieData & MovieData::operator =(const MovieData & rhs) {
     genres = rhs.genres;
     runtime = rhs.runtime;
     poster = rhs.poster;
+    url = rhs.url;
 
     return *this;
 }
 Bool MovieData::operator ==(const MovieData & rhs) const {
-    return title == rhs.title && year == rhs.year && overview == rhs.overview
-            && directors == rhs.directors && writers == rhs.writers
-            && actors == rhs.writers && genres == rhs.genres
-            && runtime == rhs.runtime && poster == rhs.poster;
+    return id == rhs.id && title == rhs.title && year == rhs.year
+            && overview == rhs.overview && directors == rhs.directors
+            && writers == rhs.writers && actors == rhs.writers
+            && genres == rhs.genres && runtime == rhs.runtime
+            && poster == rhs.poster && url == rhs.url;
 }
 Bool MovieData::operator !=(const MovieData & rhs) const {
     return !(*this == rhs);
 }
 
 QDataStream & operator >>(QDataStream & lhs, MovieData & rhs) {
-    return lhs >> rhs.title >> rhs.year >> rhs.overview
+    return lhs >> rhs.id >> rhs.title >> rhs.year >> rhs.overview
                >> rhs.directors >> rhs.writers >> rhs.actors
-               >> rhs.genres >> rhs.runtime >> rhs.poster;
+               >> rhs.genres >> rhs.runtime >> rhs.poster >> rhs.url;
 }
 QDataStream & operator <<(QDataStream & lhs, const MovieData & rhs) {
-    return lhs << rhs.title << rhs.year << rhs.overview
+    return lhs << rhs.id << rhs.title << rhs.year << rhs.overview
                << rhs.directors << rhs.writers << rhs.actors
-               << rhs.genres << rhs.runtime << rhs.poster;
+               << rhs.genres << rhs.runtime << rhs.poster << rhs.url;
 }
 
+MovieData & MovieData::setID(UInt id) {
+    this->id = id;
+    return *this;
+}
 MovieData & MovieData::setTitle(const String & title) {
     this->title = title;
     return *this;
@@ -110,11 +118,18 @@ MovieData & MovieData::setRuntime(const Runtime & runtime) {
     this->runtime = runtime;
     return *this;
 }
-MovieData & MovieData::setPoster(const Poster & poster) {
+MovieData & MovieData::setPoster(const String & poster) {
     this->poster = poster;
     return *this;
 }
+MovieData & MovieData::setURL(const String & url) {
+    this->url = url;
+    return *this;
+}
 
+UInt MovieData::getID() const {
+    return id;
+}
 const String & MovieData::getTitle() const {
     return title;
 }
@@ -139,21 +154,23 @@ const StringList & MovieData::getGenres() const {
 const Runtime & MovieData::getRuntime() const {
     return runtime;
 }
-const Poster & MovieData::getPoster() const {
+const String & MovieData::getPoster() const {
     return poster;
+}
+const String & MovieData::getURL() const {
+    return url;
 }
 
 String MovieData::toString() const {
     StringList output;
 
-    output << String("%1 (%2)").arg(title).arg(year);
-    output << overview;
-    output << "Directors: " + directors.join(", ");
-    output << "Writers: " + writers.join(", ");
-    output << "Actors: " + actors.join(", ");
-    output << "Genres: " + genres.join(", ");
-    output << "Runtime: " + runtime.toString();
-    output << String("Poster: %1").arg(poster.isNull() ? "unavailable" : "available");
+    output << String("%1 (%2)").arg(title).arg(year)
+           << overview
+           << "Directors: " + directors.join(", ")
+           << "Writers: " + writers.join(", ")
+           << "Actors: " + actors.join(", ")
+           << "Genres: " + genres.join(", ")
+           << "Runtime: " + runtime.toString();
 
     return output.join('\n');
 }

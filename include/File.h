@@ -25,14 +25,47 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef MOVIES_MOVIES_H
-#define MOVIES_MOVIES_H
+#ifndef MOVIES_FILE_H
+#define MOVIES_FILE_H
 
 #include <Global.h>
-#include <File.h>
-#include <Runtime.h>
-#include <MovieData.h>
-#include <MovieDatabase.h>
-#include <MovieLibrary.h>
+
+#include <QFile>
+#include <QDataStream>
+
+MOVIES_NAMESPACE_BEGIN
+
+class MovieLibrary;
+
+class File {
+private:
+    QFile file;
+    QDataStream stream;
+
+public:
+    enum OpenMode {
+        Read = 0,
+        Write,
+        ReadWrite
+    };
+
+    static const String signature();
+
+    File();
+    File(const String &, OpenMode = ReadWrite);
+    ~File();
+
+    const String & getFilename() const;
+    OpenMode getOpenMode() const;
+    Bool isOpen() const;
+    
+    Bool open(const String &, OpenMode = ReadWrite);
+    File & close();
+
+    Bool read(MovieLibrary &);
+    Bool write(const MovieLibrary &);
+};
+
+MOVIES_NAMESPACE_END
 
 #endif

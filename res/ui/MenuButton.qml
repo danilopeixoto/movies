@@ -25,17 +25,62 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef MOVIES_MAIN_WINDOW_H
-#define MOVIES_MAIN_WINDOW_H
+import QtQml 2.0
+import QtQuick 2.0
+import QtQuick.Layouts 1.3
+import QtGraphicalEffects 1.0
 
-#include <QMainWindow>
+Item {
+    id: menuButton
+    width: rowLayout.width + padding * 2
+    height: rowLayout.height + padding * 2
+    Keys.onSpacePressed: clicked()
 
-class MainWindow : public QMainWindow {
-    Q_OBJECT
+    property string text: "MenuButton"
+    property font font: Qt.font({family: "Arial", pixelSize: 14})
+    property color textColor: "#fdc500"
+    property string icon: "icon.png"
+    property int iconSize: 16
+    property int padding: 5
 
-public:
-    MainWindow(QWidget* = nullptr);
-    ~MainWindow();
-};
+    signal clicked
 
-#endif
+    RowLayout {
+        id: rowLayout
+        anchors.centerIn: parent
+
+        Image {
+            id: icon
+            visible: false
+            width: menuButton.iconSize
+            height: width
+            source: menuButton.icon
+            sourceSize: Qt.size(width, width)
+        }
+
+        ColorOverlay {
+            id: colorLayer
+            source: icon
+            color: mouseArea.pressed ? Qt.darker(menuButton.textColor, 1.75) : menuButton.textColor
+            anchors.fill: icon
+        }
+
+        Text {
+            id: label
+            text: menuButton.text
+            color: colorLayer.color
+            font: menuButton.font
+            elide: Text.ElideRight
+            Layout.fillWidth: true
+        }
+    }
+
+    MouseArea {
+        id: mouseArea
+        onClicked: {
+            menuButton.forceActiveFocus()
+            menuButton.clicked()
+        }
+        anchors.fill: parent
+    }
+}

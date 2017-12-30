@@ -25,77 +25,72 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <DatabaseFile.h>
-#include <MovieData.h>
-#include <MovieCollection.h>
-
-#include <QIODevice>
+#include <File.h>
+#include <MovieLibrary.h>
 
 MOVIES_NAMESPACE_BEGIN
 
-const UInt DatabaseFile::signature() {
-    return 0x4D5644;
+const String File::signature() {
+    return MOVIES_ID;
 }
 
-DatabaseFile::DatabaseFile() {
+File::File() {
     stream.setDevice(&file);
     stream.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 }
-DatabaseFile::DatabaseFile(const String & filename, OpenMode openMode)
-    : DatabaseFile() {
+File::File(const String & filename, OpenMode openMode) : File() {
     open(filename, openMode);
 }
-DatabaseFile::~DatabaseFile() {
+File::~File() {
     close();
 }
 
-const String & DatabaseFile::getFilename() const {
+const String & File::getFilename() const {
     return file.fileName();
 }
-DatabaseFile::OpenMode DatabaseFile::getOpenMode() const {
+File::OpenMode File::getOpenMode() const {
     return static_cast<OpenMode>(file.openMode() - 1);
 }
-Bool DatabaseFile::isOpen() const {
+Bool File::isOpen() const {
     return file.isOpen();
 }
 
-DatabaseFile & DatabaseFile::open(const String & filename, OpenMode openMode) {
-    file.setFileName(filename);
-    file.open(static_cast<QIODevice::OpenModeFlag>(openMode + 1));
+Bool File::open(const String & filename, OpenMode openMode) {
+    stream.resetStatus();
 
-    return *this;
+    file.setFileName(filename);
+    return file.open(static_cast<QFile::OpenMode>(openMode + 1));
 }
-DatabaseFile & DatabaseFile::close() {
+File & File::close() {
     file.close();
     return *this;
 }
 
-Bool DatabaseFile::read(MovieCollection & movieCollection) {
+Bool File::read(MovieLibrary & movieLibrary) {
     if (!isOpen() || !file.isReadable())
         return false;
 
     if (!file.reset())
         return false;
 
-    UInt readSignature;
+    String readSignature;
     stream >> readSignature;
 
     if (readSignature != signature())
         return false;
 
-    movieCollection.clear();
-    stream >> movieCollection;
+    stream >> movieLibrary;
 
     return stream.status() == QDataStream::Ok;
 }
-Bool DatabaseFile::write(const MovieCollection & movieCollection) {
+Bool File::write(const MovieLibrary & movieLibrary) {
     if (!isOpen() || !file.isWritable())
         return false;
 
     if (!file.resize(0))
         return false;
 
-    stream << signature() << movieCollection;
+    stream << signature() << movieLibrary;
     return stream.status() == QDataStream::Ok;
 }
 

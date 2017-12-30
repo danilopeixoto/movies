@@ -29,10 +29,14 @@
 #define MOVIES_GLOBAL_H
 
 #define MOVIES_NAME "Movies"
+#define MOVIES_ID "6D6F76696573"
 #define MOVIES_VERSION "1.0.0"
 #define MOVIES_AUTHOR "Danilo Ferreira"
 #define MOVIES_COPYRIGHT "Copyright (c) 2017, Danilo Ferreira. All rights reserved."
 #define MOVIES_LICENSE "BSD-3-Clause License"
+
+#define MOVIES_DATABASE_KEY "25a26202d9effd52a58825afc0142306"
+#define MOVIES_DATABASE_FILE "movie_library.data"
 
 #define MOVIES_NAMESPACE_BEGIN namespace movies {
 #define MOVIES_NAMESPACE_END };
@@ -44,9 +48,8 @@
 #include <QChar>
 #include <QString>
 #include <QStringList>
-#include <QImage>
-#include <QFile>
 #include <QVector>
+#include <QHash>
 #include <QMap>
 
 MOVIES_NAMESPACE_BEGIN
@@ -59,13 +62,29 @@ typedef double Float;
 
 typedef QString String;
 typedef QStringList StringList;
-typedef QImage Poster;
-typedef QFile File;
 
 template<typename T> using List = QVector<T>;
-template<typename K, typename V> using Map = QMap<K, V>;
+template<typename K, typename V> using UnorderedMap = QHash<K, V>;
+template<typename K, typename V> using OrderedMap = QMap<K, V>;
+
+class MovieData;
 
 typedef List<UInt> SearchResults;
+typedef List<MovieData> MovieDataList;
+typedef UnorderedMap<String, MovieData> MovieCollection;
+
+template<typename T> T min(const T & a, const T & b) {
+    return a < b ? a : b;
+}
+template<typename T> T max(const T & a, const T & b) {
+    return a > b ? a : b;
+}
+template<typename T> void swap(const T & a, const T & b) {
+    T t = a;
+
+    a = b;
+    b = t;
+}
 
 MOVIES_NAMESPACE_END
 

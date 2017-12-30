@@ -37,17 +37,17 @@ MOVIES_NAMESPACE_BEGIN
 
 class MovieData {
 private:
-    String title, overview;
-    UInt year;
+    String title, overview, poster, url;
+    UInt id, year;
     StringList directors, writers, actors, genres;
     Runtime runtime;
-    Poster poster;
 
 public:
     MovieData();
     MovieData(const MovieData &);
-    MovieData(const String &, UInt, const String &, const StringList &, const StringList &,
-              const StringList &, const StringList &, const Runtime &, const Poster &);
+    MovieData(UInt, const String &, UInt, const String &, const StringList &,
+              const StringList &, const StringList &, const StringList &,
+              const Runtime &, const String &, const String &);
     ~MovieData();
 
     MovieData & operator =(const MovieData &);
@@ -57,6 +57,7 @@ public:
     friend QDataStream & operator >>(QDataStream &, MovieData &);
     friend QDataStream & operator <<(QDataStream &, const MovieData &);
 
+    MovieData & setID(UInt);
     MovieData & setTitle(const String &);
     MovieData & setYear(UInt);
     MovieData & setOverview(const String &);
@@ -65,7 +66,9 @@ public:
     MovieData & setActors(const StringList &);
     MovieData & setGenres(const StringList &);
     MovieData & setRuntime(const Runtime &);
-    MovieData & setPoster(const Poster &);
+    MovieData & setPoster(const String &);
+    MovieData & setURL(const String &);
+    UInt getID() const;
     const String & getTitle() const;
     UInt getYear() const;
     const String & getOverview() const;
@@ -74,7 +77,8 @@ public:
     const StringList & getActors() const;
     const StringList & getGenres() const;
     const Runtime & getRuntime() const;
-    const Poster & getPoster() const;
+    const String & getPoster() const;
+    const String & getURL() const;
 
     String toString() const;
 };

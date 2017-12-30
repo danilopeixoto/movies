@@ -25,46 +25,28 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef MOVIES_DATABASE_FILE_H
-#define MOVIES_DATABASE_FILE_H
+import QtQuick 2.0
+import QtQuick.Layouts 1.3
 
-#include <Global.h>
+Item {
+    id: menuBar
+    width: 350
+    height: 30
 
-#include <QDataStream>
+    default property alias menuItems: contents.children
 
-MOVIES_NAMESPACE_BEGIN
+    RowLayout {
+        id: rowLayout
+        anchors.fill: parent
 
-class MovieCollection;
+        Item {
+            id: horizontalSpacer
+            Layout.fillWidth: true
+        }
 
-class DatabaseFile {
-private:
-    File file;
-    QDataStream stream;
-
-public:
-    enum OpenMode {
-        Read = 0,
-        Write,
-        ReadWrite
-    };
-
-    static const UInt signature();
-
-    DatabaseFile();
-    DatabaseFile(const String &, OpenMode = ReadWrite);
-    ~DatabaseFile();
-
-    const String & getFilename() const;
-    OpenMode getOpenMode() const;
-    Bool isOpen() const;
-    
-    DatabaseFile & open(const String &, OpenMode = ReadWrite);
-    DatabaseFile & close();
-
-    Bool read(MovieCollection &);
-    Bool write(const MovieCollection &);
-};
-
-MOVIES_NAMESPACE_END
-
-#endif
+        RowLayout {
+            id: contents
+            Layout.fillHeight: true
+        }
+    }
+}

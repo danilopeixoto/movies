@@ -26,11 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <MovieDatabase.h>
-#include <Runtime.h>
 #include <MovieData.h>
 
 #include <QObject>
-#include <QtGlobal>
 #include <QUrl>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -39,25 +37,27 @@
 
 MOVIES_NAMESPACE_BEGIN
 
-const String MovieDatabase::Key::status = "success";
-const String MovieDatabase::Key::results = "results";
-const String MovieDatabase::Key::id = "id";
-const String MovieDatabase::Key::title = "original_title";
-const String MovieDatabase::Key::releaseDate = "release_date";
-const String MovieDatabase::Key::overview = "overview";
-const String MovieDatabase::Key::credits = "credits";
-const String MovieDatabase::Key::cast = "cast";
-const String MovieDatabase::Key::name = "name";
-const String MovieDatabase::Key::order = "order";
-const String MovieDatabase::Key::crew = "crew";
-const String MovieDatabase::Key::job = "job";
-const String MovieDatabase::Key::department = "department";
-const String MovieDatabase::Key::genres = "genres";
-const String MovieDatabase::Key::runtime = "runtime";
-const String MovieDatabase::Key::poster = "poster_path";
+const String MovieDatabase::Key::status("success");
+const String MovieDatabase::Key::results("results");
+const String MovieDatabase::Key::id("id");
+const String MovieDatabase::Key::title("title");
+const String MovieDatabase::Key::releaseDate("release_date");
+const String MovieDatabase::Key::overview("overview");
+const String MovieDatabase::Key::credits("credits");
+const String MovieDatabase::Key::cast("cast");
+const String MovieDatabase::Key::name("name");
+const String MovieDatabase::Key::order("order");
+const String MovieDatabase::Key::crew("crew");
+const String MovieDatabase::Key::job("job");
+const String MovieDatabase::Key::department("department");
+const String MovieDatabase::Key::genres("genres");
+const String MovieDatabase::Key::runtime("runtime");
+const String MovieDatabase::Key::poster("poster_path");
 
-const String MovieDatabase::Value::director = "Director";
-const String MovieDatabase::Value::writing = "Writing";
+const String MovieDatabase::Value::director("Director");
+const String MovieDatabase::Value::writing("Writing");
+
+const UInt MovieDatabase::timeout = 5000;
 
 const QNetworkRequest MovieDatabase::authenticationRequest(const String & key) {
     String requestPattern("https://api.themoviedb.org/3/authentication/token/new?api_key=%1");
@@ -76,13 +76,24 @@ const QNetworkRequest MovieDatabase::posterRequest(const String & filename) {
     return QNetworkRequest(QUrl(requestPattern.arg(filename)));
 }
 
-MovieDatabase & MovieDatabase::wait() {
+Bool MovieDatabase::waiting(QNetworkReply * response) {
+    QObject::connect(response, &QNetworkReply::downloadProgress, [&]() {timer.start();});
     eventLoop.exec();
-    return *this;
+
+    if (timer.isActive())
+        timer.stop();
+
+    return response->isRunning();
 }
 Bool MovieDatabase::authenticate(const String & key) {
     QNetworkReply * response = networkManager.get(authenticationRequest(key));
-    wait();
+
+    if (waiting(response)) {
+        response->abort();
+        delete response;
+
+        return false;
+    }
 
     const QJsonDocument & document = QJsonDocument::fromJson(response->readAll());
     delete response;
@@ -93,18 +104,31 @@ Bool MovieDatabase::authenticate(const String & key) {
     const QJsonObject & documentObject = document.object();
     return documentObject[Key::status].toBool();
 }
-Bool MovieDatabase::retrievePoster(const String & filename, Poster & poster) {
+String MovieDatabase::retrievePoster(const String & filename) {
     QNetworkReply * response = networkManager.get(posterRequest(filename));
-    wait();
 
-    poster = Poster::fromData(response->readAll());
-    delete response;
+    if (waiting(response)) {
+        response->abort();
+        delete response;
 
-    return !poster.isNull();
+        return String();
+    }
+
+    QString poster = String::fromLatin1(response->readAll().toBase64().data());
+
+    if (!poster.isNull())
+        poster.prepend("data:image/jpg;base64,");
+
+    return poster;
 }
 
 MovieDatabase::MovieDatabase() {
-    QObject::connect(&networkManager, SIGNAL(finished(QNetworkReply*)), &eventLoop, SLOT(quit()));
+    timer.setInterval(timeout);
+
+    QObject::connect(&timer, &QTimer::timeout,
+                     &eventLoop, &QEventLoop::quit);
+    QObject::connect(&networkManager, &QNetworkAccessManager::finished,
+                     &eventLoop, &QEventLoop::quit);
 }
 MovieDatabase::MovieDatabase(const String & key) : MovieDatabase() {
     open(key);
@@ -116,15 +140,13 @@ MovieDatabase::~MovieDatabase() {
 const String & MovieDatabase::getKey() const {
     return key;
 }
-Bool MovieDatabase::isOpen() const {
-    return !key.isEmpty();
+Bool MovieDatabase::isOpen() {
+    return authenticate(key);
 }
 
-MovieDatabase & MovieDatabase::open(const String & key) {
-    if (authenticate(key))
-        this->key = key;
-
-    return *this;
+Bool MovieDatabase::open(const String & key) {
+    this->key = key;
+    return authenticate(key);
 }
 MovieDatabase & MovieDatabase::close() {
     key.clear();
@@ -136,7 +158,13 @@ Bool MovieDatabase::search(const String & title, SearchResults & searchResults) 
         return false;
 
     QNetworkReply * response = networkManager.get(searchRequest(key, title));
-    wait();
+
+    if (waiting(response)) {
+        response->abort();
+        delete response;
+
+        return false;
+    }
 
     const QJsonDocument & document = QJsonDocument::fromJson(response->readAll());
     delete response;
@@ -157,14 +185,20 @@ Bool MovieDatabase::search(const String & title, SearchResults & searchResults) 
         searchResults.append(resultObject[Key::id].toInt());
     }
 
-    return true;
+    return !searchResults.isEmpty();
 }
 Bool MovieDatabase::getDetails(UInt id, MovieData & movieData) {
     if (!isOpen())
         return false;
 
     QNetworkReply * response = networkManager.get(detailRequest(key, id));
-    wait();
+
+    if (waiting(response)) {
+        response->abort();
+        delete response;
+
+        return false;
+    }
 
     const QJsonDocument & document = QJsonDocument::fromJson(response->readAll());
     delete response;
@@ -173,6 +207,8 @@ Bool MovieDatabase::getDetails(UInt id, MovieData & movieData) {
         return false;
 
     const QJsonObject & documentObject = document.object();
+
+    movieData.setID(documentObject[Key::id].toInt());
     movieData.setTitle(documentObject[Key::title].toString());
 
     const String & releaseDate = documentObject[Key::releaseDate].toString();
@@ -202,7 +238,7 @@ Bool MovieDatabase::getDetails(UInt id, MovieData & movieData) {
     movieData.setWriters(writers);
 
     const QJsonArray & cast = creditObject[Key::cast].toArray();
-    UInt maximumCastSize = qMin(cast.size(), 5);
+    UInt maximumCastSize = min(cast.size(), 5);
 
     StringList actors;
 
@@ -222,15 +258,10 @@ Bool MovieDatabase::getDetails(UInt id, MovieData & movieData) {
     }
 
     movieData.setGenres(genres);
-
-    Runtime runtime(documentObject[Key::runtime].toInt());
-    movieData.setRuntime(runtime);
+    movieData.setRuntime(documentObject[Key::runtime].toInt());
 
     const String & posterFilename = documentObject[Key::poster].toString();
-    Poster poster;
-
-    if (retrievePoster(posterFilename, poster))
-        movieData.setPoster(poster);
+    movieData.setPoster(retrievePoster(posterFilename));
 
     return true;
 }

@@ -25,7 +25,16 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <MainWindow.h>
+import QtQuick 2.0
+import Qt.labs.platform 1.0
 
-MainWindow::MainWindow(QWidget * parent) : QMainWindow(parent) {}
-MainWindow::~MainWindow() {}
+FolderDialog {
+    id: directoryDialog
+    title: "Choose a directory"
+    folder: StandardPaths.standardLocations(StandardPaths.MoviesLocation)[0]
+
+    function getDirectory() {
+        var path = folder.toString()
+        return path.replace("file:///", "")
+    }
+}
