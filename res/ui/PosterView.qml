@@ -26,7 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import QtQml 2.0
-import QtQuick 2.0
+import QtQuick 2.9
 import QtGraphicalEffects 1.0
 
 Item {
@@ -38,7 +38,7 @@ Item {
     property int radius: 4
     property int iconSize: 32
 
-    signal clicked
+    signal clicked()
 
     Image {
         id: poster

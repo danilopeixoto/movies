@@ -36,19 +36,24 @@
 MOVIES_NAMESPACE_BEGIN
 
 const String MovieLibrary::videoContentType("video");
-const QRegularExpression MovieLibrary::sanitizerRegularExpression("([^\\d\\w]|_)+");
+const QRegularExpression MovieLibrary::sanitizerPattern("([^\\d\\w]|_)+");
+const QRegularExpression MovieLibrary::yearPattern("^\\d{4}$");
 
 const String MovieLibrary::sanitize(const String & string, Bool preserveSeparators) {
     String output = string.normalized(String::NormalizationForm_KD);
 
     if (preserveSeparators)
-        output = output.replace(sanitizerRegularExpression, " ").trimmed();
+        output = output.replace(sanitizerPattern, " ").trimmed();
     else
-        output.replace(sanitizerRegularExpression, "");
+        output.replace(sanitizerPattern, "");
 
     return output.toLower();
 }
 
+MovieLibrary & MovieLibrary::updateMovieCount() {
+    emit movieCountChanged(movieCollection.size());
+    return *this;
+}
 MovieLibrary & MovieLibrary::updateStatus(Status status) {
     this->status = status;
     emit statusChanged(status);
@@ -132,6 +137,7 @@ QDataStream & operator >>(QDataStream & lhs, MovieLibrary & rhs) {
     rhs.clear();
 
     lhs >> rhs.contentDirectory >> rhs.movieCollection;
+    rhs.updateMovieCount();
     rhs.updateData();
 
     return lhs;
@@ -156,6 +162,9 @@ MovieDataList MovieLibrary::getFilteredData() const {
         movieDataList.append(*movieData);
 
     return movieDataList;
+}
+int MovieLibrary::getMovieCount() const {
+    return movieCollection.size();
 }
 MovieLibrary::Status MovieLibrary::getStatus() const {
     return status;
@@ -232,6 +241,8 @@ Bool MovieLibrary::import(QString contentDirectory) {
     updateProgress(0);
     updateStatus(Syncronizing);
 
+    abortedSync = false;
+
     if (!movieDatabase.open(databaseKey)) {
         updateConditionalStatus(movieCollection.isEmpty(), Unvailable, Available);
         return false;
@@ -260,6 +271,7 @@ Bool MovieLibrary::import(QString contentDirectory) {
     if (fileInfoCount == 0) {
         movieCollection.clear();
 
+        updateMovieCount();
         updateProgress(1.0);
         updateStatus(Unvailable);
 
@@ -270,6 +282,11 @@ Bool MovieLibrary::import(QString contentDirectory) {
     Float step = 1.0 / fileInfoCount;
 
     for (UInt i = 1; i <= fileInfoCount; i++) {
+        if (abortedSync) {
+            abortedSync = false;
+            break;
+        }
+
         const QFileInfo & fileInfo = fileInfoList[i - 1];
         const QMimeType & mimeType = mimeDatabase.mimeTypeForFile(fileInfo);
 
@@ -277,19 +294,24 @@ Bool MovieLibrary::import(QString contentDirectory) {
         const String & contentType = mimeTypeName.mid(0, mimeTypeName.indexOf('/'));
 
         if (contentType == videoContentType) {
-            const String & filename = fileInfo.baseName();
+            const String & filename = sanitize(fileInfo.baseName(), true);
 
             if (movieCollection.contains(filename))
                 temporaryMovieCollection[filename] = movieCollection[filename];
             else {
-                const String & sanitizedTitle = sanitize(filename, true);
+                UInt separatorIndex = filename.lastIndexOf(' ');
+
+                const String & title = filename.mid(0, separatorIndex);
+                const String & year = filename.mid(separatorIndex + 1);
+
+                Bool containsYear = filename.size() > year.size() && yearPattern.match(year).hasMatch();
                 SearchResults searchResults;
 
-                if (movieDatabase.search(sanitizedTitle, searchResults)) {
-                    UInt mostPopularResult = searchResults.first();
+                if (movieDatabase.search(title, containsYear ? year.toUInt() : 0, searchResults)) {
+                    const SearchResult & mostPopularResult = searchResults.first();
                     MovieData movieData;
 
-                    if (movieDatabase.getDetails(mostPopularResult, movieData)) {
+                    if (movieDatabase.getDetails(mostPopularResult.id, movieData)) {
                         movieData.setURL(fileInfo.absoluteFilePath());
                         temporaryMovieCollection.insert(filename, movieData);
                     }
@@ -301,6 +323,7 @@ Bool MovieLibrary::import(QString contentDirectory) {
     }
 
     movieCollection = temporaryMovieCollection;
+    updateMovieCount();
     updateData();
 
     movieDatabase.close();
@@ -309,6 +332,11 @@ Bool MovieLibrary::import(QString contentDirectory) {
 }
 Bool MovieLibrary::update() {
     return import(QString());
+}
+
+MovieLibrary & MovieLibrary::abortSync() {
+    abortedSync = true;
+    return *this;
 }
 
 MovieLibrary & MovieLibrary::filter(QString data, int filterMode) {

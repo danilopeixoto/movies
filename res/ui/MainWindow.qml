@@ -28,7 +28,7 @@
 import Movies.MovieLibrary 1.0
 
 import QtQml 2.0
-import QtQuick 2.0
+import QtQuick 2.9
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 
@@ -38,6 +38,8 @@ Rectangle {
     height: 500
     color: "#000000"
 
+    property font font: Qt.font({family: "Arial", pixelSize: 14})
+    property color textColor: "#929292"
     property double backgroundOpacity: 0.15
     property double animationDuration: 500.0
     property int padding: 5
@@ -63,6 +65,12 @@ Rectangle {
         id: progressConnection
         target: movieLibrary
         onProgressChanged: stackPanel.progress = movieLibrary.getProgress()
+    }
+
+    Connections {
+        id: movieCountConnection
+        target: movieLibrary
+        onMovieCountChanged: counterLabel.setCount(movieLibrary.getMovieCount())
     }
 
     DirectoryDialog {
@@ -154,13 +162,28 @@ Rectangle {
 
         MenuBar {
             id: menuBar
-            menuItems: MenuButton {
-                id: importLibraryButton
-                text: "Import Library"
-                icon: "qrc:/images/import_library.png"
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: directoryDialog.open()
-            }
+            menuItems: [
+                MenuButton {
+                    id: importLibraryButton
+                    text: "Import Library"
+                    icon: "qrc:/images/import_library.png"
+                    anchors.verticalCenter: parent.verticalCenter
+                    onClicked: directoryDialog.open()
+                },
+
+                Text {
+                    id: counterLabel
+                    color: mainWindow.textColor
+                    font: mainWindow.font
+                    horizontalAlignment: Text.AlignRight
+                    Layout.fillWidth: true
+                    Component.onCompleted: setCount(0)
+
+                    function setCount(count) {
+                        text = Number(count).toString() + " movies"
+                    }
+                }
+            ]
             Layout.fillWidth: true
         }
     }

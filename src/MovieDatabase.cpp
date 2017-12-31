@@ -63,8 +63,12 @@ const QNetworkRequest MovieDatabase::authenticationRequest(const String & key) {
     String requestPattern("https://api.themoviedb.org/3/authentication/token/new?api_key=%1");
     return QNetworkRequest(QUrl(requestPattern.arg(key)));
 }
-const QNetworkRequest MovieDatabase::searchRequest(const String & key, const String & title) {
+const QNetworkRequest MovieDatabase::searchRequest(const String & key, const String & title, UInt year) {
     String requestPattern("https://api.themoviedb.org/3/search/movie?api_key=%1&query=%2");
+
+    if (year != emptyYear)
+        requestPattern.append(String("&year=%1").arg(year));
+
     return QNetworkRequest(QUrl(requestPattern.arg(key).arg(title)));
 }
 const QNetworkRequest MovieDatabase::detailRequest(const String & key, UInt id) {
@@ -122,6 +126,8 @@ String MovieDatabase::retrievePoster(const String & filename) {
     return poster;
 }
 
+const UInt MovieDatabase::emptyYear = 0;
+
 MovieDatabase::MovieDatabase() {
     timer.setInterval(timeout);
 
@@ -153,11 +159,11 @@ MovieDatabase & MovieDatabase::close() {
     return *this;
 }
 
-Bool MovieDatabase::search(const String & title, SearchResults & searchResults) {
+Bool MovieDatabase::search(const String & title, UInt year, SearchResults & searchResults) {
     if (!isOpen())
         return false;
 
-    QNetworkReply * response = networkManager.get(searchRequest(key, title));
+    QNetworkReply * response = networkManager.get(searchRequest(key, title, year));
 
     if (waiting(response)) {
         response->abort();
@@ -182,7 +188,14 @@ Bool MovieDatabase::search(const String & title, SearchResults & searchResults) 
 
     for (const QJsonValue & result : results) {
         const QJsonObject & resultObject = result.toObject();
-        searchResults.append(resultObject[Key::id].toInt());
+        SearchResult searchResult;
+        const String & releaseDate = resultObject[Key::releaseDate].toString();
+
+        searchResult.id = resultObject[Key::id].toInt();
+        searchResult.title = resultObject[Key::title].toInt();
+        searchResult.year = releaseDate.mid(0, releaseDate.indexOf('-')).toUInt();
+
+        searchResults.append(searchResult);
     }
 
     return !searchResults.isEmpty();

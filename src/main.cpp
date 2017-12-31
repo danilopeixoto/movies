@@ -78,6 +78,9 @@ int main(int argc, char ** argv) {
     QObject::connect(searchBar, SIGNAL(inputTextChanged(QString, int)),
                      &movieLibrary, SLOT(filter(QString, int)));
 
+    QObject * stackPanel = mainWindow->findChild<QObject *>("stackPanel");
+    QObject::connect(stackPanel, SIGNAL(abortSync()), &movieLibrary, SLOT(abortSync()));
+
     File file(MOVIES_DATABASE_FILE);
     QObject::connect(&application, &QtSingleApplication::aboutToQuit, [&]() {
         file.open(MOVIES_DATABASE_FILE);

@@ -69,7 +69,12 @@ template<typename K, typename V> using OrderedMap = QMap<K, V>;
 
 class MovieData;
 
-typedef List<UInt> SearchResults;
+typedef struct {
+    UInt id, year;
+    String title;
+} SearchResult;
+
+typedef List<SearchResult> SearchResults;
 typedef List<MovieData> MovieDataList;
 typedef UnorderedMap<String, MovieData> MovieCollection;
 

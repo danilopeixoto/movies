@@ -26,13 +26,14 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import QtQml 2.0
-import QtQuick 2.0
+import QtQuick 2.9
 import QtQuick.Controls 2.0
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 
 Item {
     id: stackPanel
+    objectName: "stackPanel"
     width: 390
     height: 420
 
@@ -41,6 +42,7 @@ Item {
     property color backgroundColor: "#ffffff"
     property color progressBarColor: "#fdc500"
     property double backgroundOpacity: 0.15
+    property int iconSize: 16
     property int radius: 4
     property int spacing: 5
 
@@ -50,6 +52,8 @@ Item {
     property alias progress: progressBar.value
     property alias currentItem: listView.currentItem
     property alias itemCount: listView.count
+
+    signal abortSync()
 
     function positionAtBeginning() {
         listView.positionViewAtBeginning()
@@ -92,17 +96,26 @@ Item {
             clip: true
             orientation: Qt.Vertical
             spacing: stackPanel.spacing
-            highlightFollowsCurrentItem: !scrollBar.active
+            highlightFollowsCurrentItem: false
+            keyNavigationEnabled: false
             snapMode: ListView.SnapToItem
             onMovementEnded: updateCurrentIndex()
             onFlickStarted: forceActiveFocus()
             layer.enabled: true
             layer.effect: OpacityMask {
-                id: opacityEffect
+                id: opacityMask
                 maskSource: listViewMask
             }
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Keys.onDownPressed: {
+                incrementCurrentIndex()
+                positionViewAtIndex(currentIndex, ListView.Beginning)
+            }
+            Keys.onUpPressed: {
+                decrementCurrentIndex()
+                positionViewAtIndex(currentIndex, ListView.Beginning)
+            }
 
             function updateCurrentIndex() {
                 currentIndex = indexAt(contentX + width * 0.5, contentY + height * 0.5)
@@ -148,29 +161,66 @@ Item {
             Layout.minimumWidth: Layout.preferredWidth
             Layout.maximumWidth: Layout.preferredWidth
 
-            ProgressBar {
-                id: progressBar
-                height: 5;
-                background: Rectangle {
-                    id: progressBarBackground
-                    width: progressBar.width
-                    height: progressBar.height
-                    color: Qt.darker(stackPanel.backgroundColor, 2.0)
-                    radius: height * 0.5
-                }
-                contentItem: Item {
-                    width: progressBar.width
-                    height: progressBar.height
+            RowLayout {
+                id: rowLayout
+                spacing: stackPanel.spacing
+                Layout.fillWidth: true
+                Layout.fillHeight: true
 
-                    Rectangle {
-                        id: progressBarIndicator
-                        width: progressBar.visualPosition * progressBar.width
-                        height: progressBar.height
-                        color: stackPanel.progressBarColor
-                        radius: progressBarBackground.radius
+                ProgressBar {
+                    id: progressBar
+                    height: 6;
+                    background: Rectangle {
+                        id: progressBarBackground
+                        color: stackPanel.textColor
+                        radius: height * 0.5
+                        anchors.fill: progressBar
+                    }
+                    contentItem: Item {
+                        id: progressBarItems
+                        anchors.fill: progressBar
+                        layer.enabled: true
+                        layer.effect: OpacityMask {
+                            id: progressBarMask
+                            maskSource: progressBarBackground
+                        }
+
+                        Rectangle {
+                            id: progressBarIndicator
+                            width: progressBar.visualPosition * progressBar.width
+                            height: progressBar.height
+                            color: stackPanel.progressBarColor
+                            radius: height * 0.5
+                        }
+                    }
+                    Layout.fillWidth: true
+                }
+
+                Image {
+                    id: cancelIcon
+                    visible: false
+                    width: stackPanel.iconSize
+                    height: width
+                    source: "qrc:/images/cancel.png"
+                    sourceSize: Qt.size(width, width)
+                }
+
+                ColorOverlay {
+                    id: colorLayer
+                    width: cancelIcon.width
+                    height: cancelIcon.height
+                    source: cancelIcon
+                    color: iconMouseArea.pressed ? Qt.darker(stackPanel.textColor, 1.75) : stackPanel.textColor
+
+                    MouseArea {
+                        id: iconMouseArea
+                        onClicked: {
+                            stackPanel.abortSync()
+                            colorLayer.forceActiveFocus()
+                        }
+                        anchors.fill: parent
                     }
                 }
-                Layout.fillWidth: true
             }
 
             Text {

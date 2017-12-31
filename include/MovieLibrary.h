@@ -92,7 +92,8 @@ private:
     typedef OrderedMap<String, MovieData *> FilteredResults;
 
     static const String videoContentType;
-    static const QRegularExpression sanitizerRegularExpression;
+    static const QRegularExpression sanitizerPattern;
+    static const QRegularExpression yearPattern;
 
     static const String sanitize(const String &, Bool = false);
 
@@ -101,12 +102,15 @@ private:
     Status status;
     Float progress;
 
+    Bool abortedSync;
+
     MovieCollection movieCollection;
     MovieReferenceList filteredData;
 
     MovieDatabase movieDatabase;
     QMimeDatabase mimeDatabase;
 
+    MovieLibrary & updateMovieCount();
     MovieLibrary & updateStatus(Status);
     MovieLibrary & updateConditionalStatus(Bool, Status, Status);
     MovieLibrary & updateProgress(Float);
@@ -129,6 +133,7 @@ public:
     const String & getContentDirectory() const;
     const MovieCollection & getMovieCollection() const;
     MovieDataList getFilteredData() const;
+    Q_INVOKABLE int getMovieCount() const;
     Q_INVOKABLE Status getStatus() const;
     Q_INVOKABLE double getProgress() const;
 
@@ -142,9 +147,12 @@ public slots:
     Bool import(QString);
     Bool update();
 
+    MovieLibrary & abortSync();
+
     MovieLibrary & filter(QString = QString(), int = Title);
 
 signals:
+    void movieCountChanged(int);
     void statusChanged(Status);
     void progressChanged(double);
 };

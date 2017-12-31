@@ -28,7 +28,7 @@
 import Movies.MovieLibrary 1.0
 
 import QtQml 2.0
-import QtQuick 2.0
+import QtQuick 2.9
 import QtQuick.Layouts 1.3
 
 Item {

@@ -25,7 +25,7 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import QtQuick 2.0
+import QtQuick 2.9
 import QtQuick.Layouts 1.3
 
 Item {
@@ -33,20 +33,10 @@ Item {
     width: 350
     height: 30
 
-    default property alias menuItems: contents.children
+    default property alias menuItems: rowLayout.children
 
     RowLayout {
         id: rowLayout
         anchors.fill: parent
-
-        Item {
-            id: horizontalSpacer
-            Layout.fillWidth: true
-        }
-
-        RowLayout {
-            id: contents
-            Layout.fillHeight: true
-        }
     }
 }

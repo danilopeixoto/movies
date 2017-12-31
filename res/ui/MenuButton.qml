@@ -26,7 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import QtQml 2.0
-import QtQuick 2.0
+import QtQuick 2.9
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 
@@ -43,7 +43,7 @@ Item {
     property int iconSize: 16
     property int padding: 5
 
-    signal clicked
+    signal clicked()
 
     RowLayout {
         id: rowLayout

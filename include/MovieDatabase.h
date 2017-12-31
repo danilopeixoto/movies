@@ -69,7 +69,7 @@ private:
     static const UInt timeout;
 
     static const QNetworkRequest authenticationRequest(const String &);
-    static const QNetworkRequest searchRequest(const String &, const String &);
+    static const QNetworkRequest searchRequest(const String &, const String &, UInt);
     static const QNetworkRequest detailRequest(const String &, UInt);
     static const QNetworkRequest posterRequest(const String &);
 
@@ -84,6 +84,8 @@ private:
     String retrievePoster(const String &);
 
 public:
+    static const UInt emptyYear;
+
     MovieDatabase();
     MovieDatabase(const String &);
     ~MovieDatabase();
@@ -94,7 +96,7 @@ public:
     Bool open(const String &);
     MovieDatabase & close();
 
-    Bool search(const String &, SearchResults &);
+    Bool search(const String &, UInt, SearchResults &);
     Bool getDetails(UInt, MovieData &);
 };
 
