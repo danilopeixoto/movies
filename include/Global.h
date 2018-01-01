@@ -36,7 +36,7 @@
 #define MOVIES_LICENSE "BSD-3-Clause License"
 
 #define MOVIES_DATABASE_KEY "25a26202d9effd52a58825afc0142306"
-#define MOVIES_DATABASE_FILE "movie_library.data"
+#define MOVIES_DATABASE_FILENAME "library.data"
 
 #define MOVIES_NAMESPACE_BEGIN namespace movies {
 #define MOVIES_NAMESPACE_END };

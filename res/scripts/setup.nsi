@@ -100,6 +100,7 @@ Section Uninstall
 
     RMDir /r "$INSTDIR"
     RMDir /r "$SMPROGRAMS\${PRODUCT_NAME}"
+    RMDir /r "$APPDATA\${PRODUCT_NAME}"
 
     DeleteRegKey "${REGISTER_ROOT_KEY}" "${REGISTER_UNINSTALL_KEY}"
 SectionEnd

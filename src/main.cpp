@@ -37,6 +37,8 @@
 #include <QSize>
 #include <QUrl>
 #include <QPixmap>
+#include <QStandardPaths>
+#include <QDir>
 
 MOVIES_NAMESPACE_USING
 
@@ -47,6 +49,9 @@ int main(int argc, char ** argv) {
         application.sendMessage("Application is already running.");
         return 0;
     }
+
+    application.setApplicationName(MOVIES_NAME);
+    application.setApplicationVersion(MOVIES_VERSION);
 
     QPixmap image(":/images/splash_screen.png");
 
@@ -81,9 +86,14 @@ int main(int argc, char ** argv) {
     QObject * stackPanel = mainWindow->findChild<QObject *>("stackPanel");
     QObject::connect(stackPanel, SIGNAL(abortSync()), &movieLibrary, SLOT(abortSync()));
 
-    File file(MOVIES_DATABASE_FILE);
+    QDir dataDirectory(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    dataDirectory.mkpath(".");
+
+    const String & databaseFilename = dataDirectory.filePath(MOVIES_DATABASE_FILENAME);
+
+    File file(databaseFilename);
     QObject::connect(&application, &QtSingleApplication::aboutToQuit, [&]() {
-        file.open(MOVIES_DATABASE_FILE);
+        file.open(databaseFilename);
         file.write(movieLibrary);
         file.close();
     });
